@@ -15,21 +15,7 @@ def player_symbol(state):
             None: " "}[state]
 
 
-# Functional implementation of game rules
-
-
-def starting_state():
-    board = {(x,y): None for x in range(3) for y in range(3)}
-    active_player = PLAYER_X
-    return GameState(board=board, active_player=active_player)
-
-
-def active_player(game_state):
-    return game_state.active_player
-
-
 def textual_repr(game_state):
-
     b = game_state.board
     return (" {} | {} | {}\n"
             "---+---+---\n"
@@ -46,6 +32,14 @@ def textual_repr(game_state):
                               player_symbol(b[(1,2)]),
                               player_symbol(b[(2,2)]),
                               player_symbol(game_state.active_player)))
+
+# Functional implementation of game rules
+
+
+def starting_state():
+    board = {(x,y): None for x in range(3) for y in range(3)}
+    active_player = PLAYER_X
+    return GameState(board=board, active_player=active_player)
 
 
 def is_winner(game_state, player):
@@ -230,23 +224,3 @@ class TicTacToe(TicTacToeBaseSearchNode):
                         ", ".join(successor_value_reprs),
                         ")"])
 
-# ------------------------------------------------------------------------------
-
-import datetime
-
-def test():
-    t_0 = datetime.datetime.now()
-    x_win, o_win, draw = 0, 0, 0
-    for i in range(10000):
-        g = TicTacToe(starting_state())
-        while not is_finished(g.state):
-            g.automove()
-        if is_winner(g.state, PLAYER_X):
-            x_win += 1
-        elif is_winner(g.state, PLAYER_O):
-            o_win += 1
-        else:
-            draw += 1
-    t_1 = datetime.datetime.now()
-    print(x_win, o_win, draw)
-    print(float(i+1)/(t_1-t_0).total_seconds())
