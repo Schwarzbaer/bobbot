@@ -20,6 +20,8 @@ TODO
 
 * Code cleanup
   * Extract generic search node classes out of Tic Tac Toe
+  * Make search tree and search nodes use weakref dicts to let the GC prune the state tree.
+    * Also provide explicit pruning.
 * Algorithms
   * Alpha-Beta pruning
   * Quiescence search
@@ -29,6 +31,8 @@ TODO
   * AlphaGo (meaning: machine learning algorithms for expansion guidance and state evaluation)
 * Games
   * Nim
+  * [Black Hole](http://nestorgames.com/rulebooks/BLACKHOLE_EN.pdf) (check license first)
+  * [Order and Chaos](https://en.wikipedia.org/wiki/Order_and_Chaos) (check license first)
   * Nine Men's Morrow
   * Checkers
   * Hnefatafl

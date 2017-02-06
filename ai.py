@@ -15,9 +15,12 @@ class BaseAI:
         # TODO: ...and clean the search tree
 
     def play(self):
+        if self.debug:
+            print(self.current_state, end="\n")
         while not self.current_state.is_finished():
             self.make_move(self.choose_move())
-            print(self.current_state, end="\n\n")
+            if self.debug:
+                print(self.current_state, end="\n")
 
     def expand_search_tree(self):
         raise NotImplemented(".expand_search_tree() not implemented")
@@ -67,8 +70,11 @@ class FullExpansionMixin(OneStepSearchMixin):
 
 
 if __name__ == '__main__':
-    from games.tictactoe import TicTacToe
-    TTT = type('TicTacToeAI', (FullExpansionMixin, BaseAI), {})
-    ai = TTT(TicTacToe(), debug=True)
+    #from games.tictactoe import TicTacToe
+    #TTT = type('TicTacToeAI', (FullExpansionMixin, BaseAI), {})
+    #ai = TTT(TicTacToe(), debug=True)
+    from games.nim import Nim
+    N = type('TicTacToeAI', (FullExpansionMixin, BaseAI), {})
+    ai = N(Nim(), debug=True)
     ai.play()
 

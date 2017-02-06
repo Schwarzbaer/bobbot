@@ -91,127 +91,47 @@ def all_legal_moves(game_state):
             if is_legal_move(game_state, coord)]
 
 
+def evaluate(game_state):
+    if not is_finished(game_state):
+        return {PLAYER_X: 0,
+                PLAYER_O: 0}
+    elif is_winner(game_state, PLAYER_X):
+        return {PLAYER_X: 1,
+                PLAYER_O: -1}
+    elif is_winner(game_state, PLAYER_O):
+        return {PLAYER_X: -1,
+                PLAYER_O: 1}
+    else:
+        return {PLAYER_X: -0.5,
+                PLAYER_O: -0.5}
+
+
+def node_key(game_state):
+    return ''.join([player_symbol(game_state.board[(x,y)])
+                    for x in range(3)
+                    for y in range(3)])
+
 # AI adapters
 
 
-from search_node import SearchNode
+from search_node import RandomOfBestChooser, GameAdapter
 
 
-# TODO: Most of this note can be genericed away by passing StateNode type and
-#   functions to __init__ as a type.
-class TicTacToeBaseSearchNode(SearchNode):
-    def __init__(self, state=None, known_predecessors=None):
-        if state is None:
-            state = starting_state()
-        if known_predecessors is None:
-            known_predecessors = set()
-        super().__init__(state, known_predecessors)
-
-    def expand(self):
-        """
-        Returns all successor states for this state. It doesn't store them in
-        this state object, as the search tree might find that it has already
-        found the successor state before, and updates that instance with data
-        from the instance generated here. Either way, the successor with the
-        most complete set of information available (be it created here or by
-        merging the one created here with the existing one) is indicated to
-        this instance via :post_expansion_insertion:.
-        """
-        # TODO: This computes each move twice. Optimize!
-        # TODO: Didn't I just say that we shouldn't store here?
-        move_to_successor = {move: TicTacToe(state=make_move(self.state, move),
-                                             known_predecessors={self})
-                             for move in all_legal_moves(self.state)}
-        self.moves = {move: state.node_key() for move, state in move_to_successor.items()}
-        self.is_expanded = True
-        return move_to_successor.values()
-
-    def post_expansion_insertion(self, old, new):
-        self.successors.update(old)
-        self.successors.update(new)
-    
-    def is_finished(self):
-        # TODO: Cache this?
-        return is_finished(self.state)
-
-    def merge(self, other_instance):
-        if not self.is_expanded and other_instance.is_expanded:
-            self.successors = other_instance.successors
-            self.is_expanded = True
-        self.known_predecessors.add(*other_instance.known_predecessors)
-
-    def node_key(self):
-        return ''.join([player_symbol(self.state.board[(x,y)])
-                        for x in range(3)
-                        for y in range(3)])
-
-    def __repr__(self):
-        return self.node_key()
+# TODO: This needs to go away.
+def strip_self(func):
+    def inner(*args, **kwargs):
+        return func(*args[1:], **kwargs)
+    return inner
 
 
-import random
+class TicTacToe(RandomOfBestChooser, GameAdapter):
+    starting_state = strip_self(starting_state)
+    evaluate_func = strip_self(evaluate)
+    is_finished_func = strip_self(is_finished)
+    all_legal_moves_func = strip_self(all_legal_moves)
+    make_move_func = strip_self(make_move)
+    node_key_func = strip_self(node_key)
 
-
-class TicTacToe(TicTacToeBaseSearchNode):
-    def __init__(self, state=None, known_predecessors=None):
-        super().__init__(state, known_predecessors)
-        if not self.is_finished():
-            self.score = {PLAYER_X: 0,
-                          PLAYER_O: 0}
-        elif is_winner(self.state, PLAYER_X):
-            self.score = {PLAYER_X: 1,
-                          PLAYER_O: -1}
-        elif is_winner(self.state, PLAYER_O):
-            self.score = {PLAYER_X: -1,
-                          PLAYER_O: 1}
-        else:
-            self.score = {PLAYER_X: -0.5,
-                          PLAYER_O: -0.5}
-
-    def backpropagate_score(self):
-        for node in self.known_predecessors:
-            node.update_score()
-
-    def post_expansion_insertion(self, old, new):
-        super().post_expansion_insertion(old, new)
-        if old or new:
-            self.update_score()
-
-    def merge(self, other_instance):
-        super().merge(other_instance)
-        if self.successors:
-            self.update_score()
-        
-    def update_score(self):
-        active_player = self.state.active_player
-        has_been_updated = False
-        for player in self.score:
-            successor_scores = [successor.score[player] for successor in self.successors.values()]
-            if player == active_player:
-                new_score = max(successor_scores)
-            else:
-                new_score = min(successor_scores)
-            if new_score != self.score[player]:
-                self.score[player] = new_score
-                has_been_updated = True
-        if has_been_updated:
-            self.backpropagate_score()
-
-    def find_best_move(self):
-        possible_moves = {move: self.successors[key].score[self.state.active_player]
-                          for move, key in self.moves.items()}
-        best_score = max(possible_moves.values())
-        best_moves = [move for move in possible_moves if possible_moves[move] == best_score]
-        return random.choice(best_moves)
-
-    def __repr__(self):
-        return "{}|Move {}, Score {: 2.1f}/{: 2.1f}, {} successors".format(
-            self.node_key(),
-            player_symbol(self.state.active_player),
-            self.score[PLAYER_X],
-            self.score[PLAYER_O],
-            len(self.successors)
-        )
     def __repr__(self):
         board_repr = textual_repr(self.state)
         value_repr = "State valuation: {: 2.1f}/{: 2.1f}".format(self.score[PLAYER_X], 
