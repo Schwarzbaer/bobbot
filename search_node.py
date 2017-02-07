@@ -47,22 +47,22 @@ class SearchNode:
 
 class GameAdapter(SearchNode):
     def starting_state(self):
-        return self.starting_state_func()
+        raise NotImplemented("Game does not implement .starting_state()")
 
     def evaluate(self):
-        return self.evaluate_func(self.state)
+        raise NotImplemented("Game does not implement .evaluate()")
 
     def is_finished(self):
-        return self.is_finished_func(self.state)
+        raise NotImplemented("Game does not implement .is_finished()")
 
     def all_legal_moves(self):
-        return self.all_legal_moves_func(self.state)
+        raise NotImplemented("Game does not implement .all_legal_moves()")
 
     def make_move(self, move):
-        return self.make_move_func(self.state, move)
+        raise NotImplemented("Game does not implement .make_move()")
 
     def node_key(self):
-        return self.node_key_func(self.state)
+        raise NotImplemented("Game does not implement .node_key()")
 
     def __repr__(self):
         return self.node_key()

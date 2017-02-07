@@ -31,7 +31,8 @@ def textual_repr(game_state):
         state = "Winner: {}".format(player_symbol(game_state.winner))
     else:
         state = "Move: {}".format(player_symbol(game_state.active_player))
-    return items + " " + state
+    nim_sum = game_state.board[0] ^ game_state.board[1] ^ game_state.board[2]
+    return items + " " + state + ", Nim sum: " + str(nim_sum)
 
 
 # Functional implementation of game rules
@@ -74,7 +75,14 @@ def all_legal_moves(game_state):
             for take in range(1, game_state.board[pos] + 1)]
 
 
-def evaluate(game_state):
+def node_key(game_state):
+    board_repr = ''.join([str(heapsize) for heapsize in game_state.board])
+    player_repr = player_symbol(game_state.active_player)
+    return board_repr + player_repr
+
+
+
+def evaluate_if_end_state(game_state):
     if game_state.winner == PLAYER_A:
         return {PLAYER_A: 1,
                 PLAYER_B: -1}
@@ -86,24 +94,42 @@ def evaluate(game_state):
                 PLAYER_B: 0}
 
 
+def evaluate_by_nim_sum(game_state):
+    def other_player(player):
+        return {PLAYER_A: PLAYER_B,
+                PLAYER_B: PLAYER_A}[player]
+    nim_sum = game_state.board[0] ^ game_state.board[1] ^ game_state.board[2]
+    if game_state.active_player is None:
+        return evaluate_if_end_state(game_state)
+    if nim_sum == 0:
+        return {game_state.active_player: -1,
+                other_player(game_state.active_player): 1}
+    else:
+        return {game_state.active_player: 1,
+                other_player(game_state.active_player): -1}
+
 
 from search_node import RandomOfBestChooser, GameAdapter
 
 
-# TODO: This needs to go away.
-def strip_self(func):
-    def inner(*args, **kwargs):
-        return func(*args[1:], **kwargs)
-    return inner
-
-
 class Nim(RandomOfBestChooser, GameAdapter):
-    starting_state = strip_self(starting_state)
-    evaluate_func = strip_self(evaluate)
-    is_finished_func = strip_self(is_finished)
-    all_legal_moves_func = strip_self(all_legal_moves)
-    make_move_func = strip_self(make_move)
-    node_key_func = strip_self(textual_repr)
+    def starting_state(self):
+        return starting_state()
+
+    def evaluate(self):
+        return evaluate_by_nim_sum(self.state)
+
+    def is_finished(self):
+        return is_finished(self.state)
+
+    def all_legal_moves(self):
+        return all_legal_moves(self.state)
+
+    def make_move(self, move):
+        return make_move(self.state, move)
+
+    def node_key(self):
+        return node_key(self.state)
 
     def __repr__(self):
         return textual_repr(self.state)

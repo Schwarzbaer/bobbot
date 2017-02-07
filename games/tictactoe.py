@@ -117,20 +117,25 @@ def node_key(game_state):
 from search_node import RandomOfBestChooser, GameAdapter
 
 
-# TODO: This needs to go away.
-def strip_self(func):
-    def inner(*args, **kwargs):
-        return func(*args[1:], **kwargs)
-    return inner
-
-
+# TODO: GameAdapter needs to pass the state in the first place.
 class TicTacToe(RandomOfBestChooser, GameAdapter):
-    starting_state = strip_self(starting_state)
-    evaluate_func = strip_self(evaluate)
-    is_finished_func = strip_self(is_finished)
-    all_legal_moves_func = strip_self(all_legal_moves)
-    make_move_func = strip_self(make_move)
-    node_key_func = strip_self(node_key)
+    def starting_state(self):
+        return starting_state()
+
+    def evaluate(self):
+        return evaluate(self.state)
+
+    def is_finished(self):
+        return is_finished(self.state)
+
+    def all_legal_moves(self):
+        return all_legal_moves(self.state)
+
+    def make_move(self, move):
+        return make_move(self.state, move)
+
+    def node_key(self):
+        return node_key(self.state)
 
     def __repr__(self):
         board_repr = textual_repr(self.state)

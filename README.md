@@ -19,9 +19,11 @@ TODO
 ----
 
 * Code cleanup
-  * Extract generic search node classes out of Tic Tac Toe
   * Make search tree and search nodes use weakref dicts to let the GC prune the state tree.
     * Also provide explicit pruning.
+  * multiprocessing
+    * ...to let it run in the background, to not block the interface
+    * ...for pondering
 * Algorithms
   * Alpha-Beta pruning
   * Quiescence search
@@ -30,12 +32,15 @@ TODO
   * Monte Carlo tree search
   * AlphaGo (meaning: machine learning algorithms for expansion guidance and state evaluation)
 * Games
-  * Nim
+  * [Nim](https://en.wikipedia.org/wiki/Nim)
   * [Black Hole](http://nestorgames.com/rulebooks/BLACKHOLE_EN.pdf) (check license first)
   * [Order and Chaos](https://en.wikipedia.org/wiki/Order_and_Chaos) (check license first)
-  * Nine Men's Morrow
-  * Checkers
-  * Hnefatafl
-  * Chess
-  * Go
+  * [Nine Men's Morris](https://en.wikipedia.org/wiki/Nine_Men's_Morris)
+  * [Fanorona](https://en.wikipedia.org/wiki/Fanorona)
+  * [Ludus latrunculorum](https://en.wikipedia.org/wiki/Ludus_latrunculorum)
+  * [Mancala](https://en.wikipedia.org/wiki/Mancala)
+  * [Checkers](https://en.wikipedia.org/wiki/Draughts)
+  * [Hnefatafl](https://de.wikipedia.org/wiki/Hnefatafl)
+  * [Chess](https://en.wikipedia.org/wiki/Chess)
+  * [Go](https://en.wikipedia.org/wiki/Go_(game))
 
