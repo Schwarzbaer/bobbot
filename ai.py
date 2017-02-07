@@ -12,15 +12,16 @@ class BaseAI:
 
     def make_move(self, move):
         self.current_state = self.current_state.get_successor(move)
-        # TODO: ...and clean the search tree
 
     def play(self):
         if self.debug:
             print(self.current_state, end="\n")
+            print("Nodes in the search tree: {}".format(len(self.search_tree)))
         while not self.current_state.is_finished():
             self.make_move(self.choose_move())
             if self.debug:
                 print(self.current_state, end="\n")
+                print("Nodes in the search tree: {}".format(len(self.search_tree)))
 
     def expand_search_tree(self):
         raise NotImplemented(".expand_search_tree() not implemented")
@@ -69,12 +70,37 @@ class FullExpansionMixin(OneStepSearchMixin):
             super().expand_search_tree()
 
 
+class NaivePruningMixin:
+    def make_move(self, move):
+        super().make_move(move)
+        post_move_size = len(self.search_tree)
+        transitive_hull = set()
+        frontier = set([self.current_state.node_key()])
+        while frontier:
+            expansion = frontier.pop()
+            transitive_hull.add(expansion)
+            frontier.update(node_key
+                            for node_key in self.search_tree[expansion].successors.keys()
+                            if node_key not in transitive_hull)
+        nodes_to_delete = set(self.search_tree.keys()) - transitive_hull
+        for key in nodes_to_delete:
+            del self.search_tree[key]
+            # TODO: Remove these as predecessors from still-existing nodes, too
+        post_prune_size = len(self.search_tree)
+        if self.debug:
+            print("Search tree size: {} (after move) - {} (pruned) = {}".format(
+                post_move_size,
+                post_move_size - post_prune_size,
+                post_prune_size)
+            )
+
+
 if __name__ == '__main__':
-    #from games.tictactoe import TicTacToe
-    #TTT = type('TicTacToeAI', (FullExpansionMixin, BaseAI), {})
-    #ai = TTT(TicTacToe(), debug=True)
-    from games.nim import Nim
-    N = type('TicTacToeAI', (FullExpansionMixin, BaseAI), {})
-    ai = N(Nim(), debug=True)
+    from games.tictactoe import TicTacToe
+    TTT = type('TicTacToeAI', (FullExpansionMixin, NaivePruningMixin, BaseAI), {})
+    ai = TTT(TicTacToe(), debug=True)
+    #from games.nim import Nim
+    #N = type('TicTacToeAI', (FullExpansionMixin, NaivePruningMixin, BaseAI), {})
+    #ai = N(Nim(), debug=True)
     ai.play()
 
