@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 class BaseAI:
     def __init__(self, current_state, debug=False):
         self.current_state = current_state
@@ -93,14 +91,4 @@ class NaivePruningMixin:
                 post_move_size - post_prune_size,
                 post_prune_size)
             )
-
-
-if __name__ == '__main__':
-    from games.tictactoe import TicTacToe
-    TTT = type('TicTacToeAI', (FullExpansionMixin, NaivePruningMixin, BaseAI), {})
-    ai = TTT(TicTacToe(), debug=True)
-    #from games.nim import Nim
-    #N = type('TicTacToeAI', (FullExpansionMixin, NaivePruningMixin, BaseAI), {})
-    #ai = N(Nim(), debug=True)
-    ai.play()
 

@@ -1,5 +1,7 @@
 from collections import namedtuple
 
+from bobbot.search_node import GameAdapter
+
 
 # Types, constants and helpers
 
@@ -111,14 +113,9 @@ def node_key(game_state):
                     for x in range(3)
                     for y in range(3)])
 
-# AI adapters
-
-
-from search_node import RandomOfBestChooser, GameAdapter
-
 
 # TODO: GameAdapter needs to pass the state in the first place.
-class TicTacToe(RandomOfBestChooser, GameAdapter):
+class TicTacToeAdapter(GameAdapter):
     def starting_state(self):
         return starting_state()
 

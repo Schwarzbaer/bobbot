@@ -1,8 +1,9 @@
 from collections import namedtuple
 
+from bobbot.search_node import GameAdapter
+
 
 # Types, constants and helpers
-
 
 GameState = namedtuple('GameState', ['board', 'active_player', 'winner'])
 
@@ -109,10 +110,7 @@ def evaluate_by_nim_sum(game_state):
                 other_player(game_state.active_player): -1}
 
 
-from search_node import RandomOfBestChooser, GameAdapter
-
-
-class Nim(RandomOfBestChooser, GameAdapter):
+class NimAdapter(GameAdapter):
     def starting_state(self):
         return starting_state()
 
