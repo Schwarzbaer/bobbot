@@ -78,12 +78,13 @@ class NaivePruningMixin:
             expansion = frontier.pop()
             transitive_hull.add(expansion)
             frontier.update(node_key
-                            for node_key in self.search_tree[expansion].successors.keys()
+                            for node_key in self.search_tree[expansion].successors.keys() # FIXME: accesses SearchNode internals
                             if node_key not in transitive_hull)
         nodes_to_delete = set(self.search_tree.keys()) - transitive_hull
         for key in nodes_to_delete:
             del self.search_tree[key]
             # TODO: Remove these as predecessors from still-existing nodes, too
+            # TODO: ...which will also require to add such methods to search nodes.
         post_prune_size = len(self.search_tree)
         if self.debug:
             print("Search tree size: {} (after move) - {} (pruned) = {}".format(

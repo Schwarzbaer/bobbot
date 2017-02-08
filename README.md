@@ -18,12 +18,16 @@ of the game's possible states) before starting to play it.
 TODO
 ----
 
-* Code cleanup
+* Project cleanup
+  * Write tests
+  * flake8 (or other linter)
+* Code features
   * Make search tree and search nodes use weakref dicts to let the GC prune the state tree.
-    * Also provide explicit pruning.
   * multiprocessing
     * ...to let it run in the background, to not block the interface
     * ...for pondering
+  * GameAdapter: pass needed args to method so that implementations don't have to meddle wit
+    internals.
 * Algorithms
   * Alpha-Beta pruning
   * Quiescence search
