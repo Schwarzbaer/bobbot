@@ -29,6 +29,8 @@ TODO
     * ...for pondering
 * Algorithms
   * Alpha-Beta pruning
+  * [Proof-number search](https://en.wikipedia.org/wiki/Proof-number_search)
+  * [Best-first search](https://en.wikipedia.org/wiki/Best-first_search)
   * Quiescence search
   * Expectiminimax
   * Principal variation search

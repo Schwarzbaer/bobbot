@@ -183,7 +183,7 @@ class ChooseFirstMove(EvaluatingSearchNode):
 
 class ChooseRandomMoveFromBest(EvaluatingSearchNode):
     def find_best_move(self):
-        possible_moves = {move: self.successors[key].score[_active_player(self)]
+        possible_moves = {move: self.successors[key].score[self._active_player()]
                           for move, key in self.moves.items()}
         best_score = max(possible_moves.values())
         best_moves = [move for move in possible_moves if possible_moves[move] == best_score]
