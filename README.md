@@ -21,13 +21,12 @@ TODO
 * Project cleanup
   * Write tests
   * flake8 (or other linter)
+  * Packaging
 * Code features
   * Make search tree and search nodes use weakref dicts to let the GC prune the state tree.
   * multiprocessing
     * ...to let it run in the background, to not block the interface
     * ...for pondering
-  * GameAdapter: pass needed args to method so that implementations don't have to meddle wit
-    internals.
 * Algorithms
   * Alpha-Beta pruning
   * Quiescence search
@@ -36,7 +35,7 @@ TODO
   * Monte Carlo tree search
   * AlphaGo (meaning: machine learning algorithms for expansion guidance and state evaluation)
 * Games
-  * [Nim](https://en.wikipedia.org/wiki/Nim)
+  * [Nim](https://en.wikipedia.org/wiki/Nim) (more variants)
   * [Black Hole](http://nestorgames.com/rulebooks/BLACKHOLE_EN.pdf) (check license first)
   * [Order and Chaos](https://en.wikipedia.org/wiki/Order_and_Chaos) (check license first)
   * [Nine Men's Morris](https://en.wikipedia.org/wiki/Nine_Men's_Morris)
@@ -47,4 +46,4 @@ TODO
   * [Hnefatafl](https://de.wikipedia.org/wiki/Hnefatafl)
   * [Chess](https://en.wikipedia.org/wiki/Chess)
   * [Go](https://en.wikipedia.org/wiki/Go_(game))
-
+  * [Arimaa](https://en.wikipedia.org/wiki/Arimaa)
