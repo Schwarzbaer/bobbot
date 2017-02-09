@@ -12,7 +12,7 @@ class SearchNode:
         self.known_predecessors = known_predecessors
     
     def expand(self):
-        raise NotImplemented("Game's SearchNode doesn't implement .expand()")
+        raise NotImplementedError("Game's SearchNode doesn't implement .expand()")
     
     def post_expansion_insertion(self, old, new):
         """
@@ -29,17 +29,17 @@ class SearchNode:
         Is the game in a state from which it can't be continued, either because
         a player won or it resulted in a draw?
         """
-        raise NotImplemented("Game's SearchNode doesn't implement .is_finished()")
+        raise NotImplementedError("Game's SearchNode doesn't implement .is_finished()")
     
     def merge(self, other_instance):
         """
         This node has been re-discovered through expansion of a game state,
         and the resulting information should be added to this instance.
         """
-        raise NotImplemented("Game's SearchNode doesn't implement .merge()")
+        raise NotImplementedError("Game's SearchNode doesn't implement .merge()")
     
     def node_key(self):
-        raise NotImplemented("Game's SearchNode doesn't implement .node_key()")
+        raise NotImplementedError("Game's SearchNode doesn't implement .node_key()")
 
     def get_successor(self, move):
         return self.successors[self.moves[move]]
@@ -50,43 +50,43 @@ class GameAdapter(SearchNode):
         return self.starting_state()
 
     def starting_state(self):
-        raise NotImplemented("Game does not implement .starting_state()")
+        raise NotImplementedError("Game does not implement .starting_state()")
 
     def _active_player(self):
         return self.active_player(self.state)
 
     def active_player(self, game_state):
-        raise NotImplemented("Game does not implement .active_player()")
+        raise NotImplementedError("Game does not implement .active_player()")
 
     def _is_finished(self):
         return self.is_finished(self.state)
 
     def is_finished(self, game_state):
-        raise NotImplemented("Game does not implement .is_finished()")
+        raise NotImplementedError("Game does not implement .is_finished()")
 
     def _all_legal_moves(self):
         return self.all_legal_moves(self.state)
 
     def all_legal_moves(self, game_state):
-        raise NotImplemented("Game does not implement .all_legal_moves()")
+        raise NotImplementedError("Game does not implement .all_legal_moves()")
 
     def _make_move(self, move):
         return self.make_move(self.state, move)
 
     def make_move(self, game_state, move):
-        raise NotImplemented("Game does not implement .make_move()")
+        raise NotImplementedError("Game does not implement .make_move()")
 
     def _node_key(self):
         return self.node_key(self.state)
 
     def node_key(self, game_state):
-        raise NotImplemented("Game does not implement .node_key()")
+        raise NotImplementedError("Game does not implement .node_key()")
 
     def _evaluate(self):
         return self.evaluate(self.state)
 
     def evaluate(self, game_state):
-        raise NotImplemented("Game does not implement .evaluate()")
+        raise NotImplementedError("Game does not implement .evaluate()")
 
     def __repr__(self):
         return self._node_key()

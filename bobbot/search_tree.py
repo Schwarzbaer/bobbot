@@ -22,7 +22,7 @@ class BaseAI:
                 print("Nodes in the search tree: {}".format(len(self.search_tree)))
 
     def expand_search_tree(self):
-        raise NotImplemented(".expand_search_tree() not implemented")
+        raise NotImplementedError(".expand_search_tree() not implemented")
 
     def add_node(self, node):
         """
@@ -37,7 +37,7 @@ class BaseAI:
             return False
 
     def find_best_move(self):
-        raise NotImplemented(".find_best_move() not implemented")
+        raise NotImplementedError(".find_best_move() not implemented")
     
 
 class OneStepSearchMixin:
