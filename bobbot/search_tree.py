@@ -15,7 +15,7 @@ class BaseAI:
         if self.debug:
             print(self.current_state, end="\n")
             print("Nodes in the search tree: {}".format(len(self.search_tree)))
-        while not self.current_state.is_finished():
+        while not self.current_state._is_finished():
             self.make_move(self.choose_move())
             if self.debug:
                 print(self.current_state, end="\n")
@@ -23,6 +23,18 @@ class BaseAI:
 
     def expand_search_tree(self):
         raise NotImplemented(".expand_search_tree() not implemented")
+
+    def add_node(self, node):
+        """
+        Adds the node to the search tree if it isn't present already, or causes
+        a merge with the already present instance of it otherwise.
+        """
+        if node._node_key() not in self.search_tree:
+            self.search_tree[node._node_key()] = node
+            return True
+        else:
+            self.search_tree[node._node_key()].merge(node)
+            return False
 
     def find_best_move(self):
         raise NotImplemented(".find_best_move() not implemented")
@@ -44,23 +56,11 @@ class OneStepSearchMixin:
                 is_new = self.add_node(successor)
                 # FIXME: Ugly copypaste.
                 if is_new:
-                    new[successor.node_key()] = successor
+                    new[successor._node_key()] = successor
                 else:
-                    old[successor.node_key()] = self.search_tree[successor.node_key()]
+                    old[successor._node_key()] = self.search_tree[successor._node_key()]
             node.post_expansion_insertion(old, new)
     
-    def add_node(self, node):
-        """
-        Adds the node to the search tree if it isn't present already, or causes
-        a merge with the already present instance of it otherwise.
-        """
-        if node.node_key() not in self.search_tree:
-            self.search_tree[node.node_key()] = node
-            return True
-        else:
-            self.search_tree[node.node_key()].merge(node)
-            return False
-
 
 class FullExpansionMixin(OneStepSearchMixin):
     def expand_search_tree(self):
@@ -73,7 +73,7 @@ class NaivePruningMixin:
         super().make_move(move)
         post_move_size = len(self.search_tree)
         transitive_hull = set()
-        frontier = set([self.current_state.node_key()])
+        frontier = set([self.current_state._node_key()])
         while frontier:
             expansion = frontier.pop()
             transitive_hull.add(expansion)

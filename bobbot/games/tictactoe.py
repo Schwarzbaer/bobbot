@@ -119,20 +119,23 @@ class TicTacToeAdapter(GameAdapter):
     def starting_state(self):
         return starting_state()
 
-    def evaluate(self):
-        return evaluate(self.state)
+    def evaluate(self, game_state):
+        return evaluate(game_state)
 
-    def is_finished(self):
-        return is_finished(self.state)
+    def active_player(self, game_state):
+        return game_state.active_player
 
-    def all_legal_moves(self):
-        return all_legal_moves(self.state)
+    def is_finished(self, game_state):
+        return is_finished(game_state)
 
-    def make_move(self, move):
-        return make_move(self.state, move)
+    def all_legal_moves(self, game_state):
+        return all_legal_moves(game_state)
 
-    def node_key(self):
-        return node_key(self.state)
+    def make_move(self, game_state, move):
+        return make_move(game_state, move)
+
+    def node_key(self, game_state):
+        return node_key(game_state)
 
     def __repr__(self):
         board_repr = textual_repr(self.state)
