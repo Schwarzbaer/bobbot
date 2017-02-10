@@ -2,47 +2,55 @@ class SearchNode:
     def __init__(self, state=None, known_predecessors=None):
         if state is None:
             state = self._starting_state()
+        self.state = state
+
         if known_predecessors is None:
             known_predecessors = set()
-        self.state = state
+        assert isinstance(known_predecessors, set), "{!r} is not a set".format(known_predecessors)
+        self.known_predecessors = known_predecessors
+
         self.is_expanded = False
         self.successors = {} # {key: state} to keep a ref to the successor
         self.moves = {} # {move: key}
-        assert isinstance(known_predecessors, set), "{!r} is not a set".format(known_predecessors)
-        self.known_predecessors = known_predecessors
     
     def expand(self):
+        """Create all successor states."""
         raise NotImplementedError("Game's SearchNode doesn't implement .expand()")
     
     def post_expansion_insertion(self, old, new):
-        """
-        Gets called after this node has been expanded and its new successors
-        have been inserted into the search tree. :old: contains nodes that
-        were already present in the search tree, but have been updated through
-        .merge(). new contains nodes that haven't been known before. The format
-        of both is {node_key: node}
+        """Gets called after this node has been expanded and its new
+        successors have been inserted into the search tree. :old:
+        contains nodes that were already present in the search tree,
+        but have been updated through .merge(). new contains nodes
+        that haven't been known before. The format of both is
+        {node_key: node}
         """
         pass
     
     def is_finished(self):
-        """
-        Is the game in a state from which it can't be continued, either because
-        a player won or it resulted in a draw?
+        """Is the game in a state from which it can't be continued,
+        either because a player won or it resulted in a draw?
         """
         raise NotImplementedError("Game's SearchNode doesn't implement .is_finished()")
     
     def merge(self, other_instance):
-        """
-        This node has been re-discovered through expansion of a game state,
-        and the resulting information should be added to this instance.
+        """This node has been re-discovered through expansion of a
+        game state, and the resulting information should be added to
+        this instance.
         """
         raise NotImplementedError("Game's SearchNode doesn't implement .merge()")
     
     def node_key(self):
         raise NotImplementedError("Game's SearchNode doesn't implement .node_key()")
 
+    def get_successors(self):
+        return self.successors
+    
     def get_successor(self, move):
         return self.successors[self.moves[move]]
+    
+    def remove_predecessors(self, to_remove):
+        self.known_predecessors -= set(to_remove)
 
 
 class GameAdapter(SearchNode):
@@ -92,20 +100,18 @@ class GameAdapter(SearchNode):
         return self._node_key()
 
 
-# TODO: The reference to TicTacToe needs to go.
 class ExpandingSearchNode(SearchNode):
-    """
-    Requires .all_legal_moves(), .make_move() to be implemented.
+    """Requires .all_legal_moves(), .make_move() to be implemented.
     """
     def expand(self):
-        """
-        Returns all successor states for this state. It doesn't store them in
-        this state object, as the search tree might find that it has already
-        found the successor state before, and updates that instance with data
-        from the instance generated here. Either way, the successor with the
-        most complete set of information available (be it created here or by
-        merging the one created here with the existing one) is indicated to
-        this instance via :post_expansion_insertion:.
+        """Returns all successor states for this state. It doesn't
+        store them in this state object, as the search tree might
+        find that it has already found the successor state before,
+        and updates that instance with data from the instance
+        generated here. Either way, the successor with the most
+        complete set of information available (be it created here or
+        by merging the one created here with the existing one) is
+        indicated to this instance via :post_expansion_insertion:.
         """
         # TODO: This computes each move twice. Optimize!
         # TODO: Didn't I just say that we shouldn't store here?

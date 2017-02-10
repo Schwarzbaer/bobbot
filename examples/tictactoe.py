@@ -9,7 +9,7 @@ from bobbot.search_node import ChooseFirstMove, ChooseRandomMove, ChooseRandomMo
 
 TicTacToe = type('TicTacToe', (TicTacToeAdapter, ChooseRandomMoveFromBest), {})
 AI = type('AI', (BoundedExpansionMixin, OneStepSearchMixin, NaivePruningMixin, BaseAI), {})
-ai = AI(TicTacToe(), debug=True, time_limit=3, node_limit=1000)
+ai = AI(TicTacToe(), debug=True, time_limit=0.5, node_limit=1000)
 
 
 if __name__ == '__main__':

@@ -98,7 +98,7 @@ class BoundedExpansionMixin:
                 limit_exceeded = True
             if self.time_limit and (datetime.now() - start_time).total_seconds() >= self.time_limit:
                 limit_exceeded = True
-            if not expansion_happened:  # Tree is fully expanded
+            if not expansion_happened:
                 limit_exceeded = True
             
 
@@ -117,13 +117,14 @@ class NaivePruningMixin:
             expansion = frontier.pop()
             transitive_hull.add(expansion)
             frontier.update(node_key
-                            for node_key in self.search_tree[expansion].successors.keys() # FIXME: accesses SearchNode internals
+                            for node_key in self.search_tree[expansion].get_successors()
                             if node_key not in transitive_hull)
         nodes_to_delete = set(self.search_tree.keys()) - transitive_hull
         for key in nodes_to_delete:
             del self.search_tree[key]
-            # TODO: Remove these as predecessors from still-existing nodes, too
-            # TODO: ...which will also require to add such methods to search nodes.
+        # FIXME: This requires nodes to also know predecessor node key, not just their objects.
+        # for node in self.search_tree.values():
+        #     node.remove_predecessors(nodes_to_delete)
         post_prune_size = len(self.search_tree)
         if self.debug:
             print("Search tree size: {} (after move) - {} (pruned) = {}".format(
