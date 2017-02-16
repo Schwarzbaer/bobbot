@@ -27,7 +27,37 @@ class BaseAI:
                 print("Nodes in the search tree: {}".format(len(self.search_tree)))
 
     def expand_search_tree(self):
-        raise NotImplementedError(".expand_search_tree() not implemented")
+        """Run the expansion of the search tree. By default, this
+        will just step the expansion algorithm once.
+        
+        Returns:
+            bool: True if any wrapping expand_search_tree should
+                interrupt its loop, False if that's irrelevant.
+        """
+        self.step_search_tree_expansion()
+
+    def step_search_tree_expansion(self):
+        """Run a single iteration of the expansion algorithm
+        Returns:
+            bool: True if any node has actually be expanded, False
+                otherwise.
+        """
+        raise NotImplementedError
+
+    def expand_single_node(self, node):
+        # TODO: Does it really even make sense to distinguish between these after
+        #   adding/merging them to/with the search tree?
+        old = {}
+        new = {}
+        for successor in node.expand():
+            is_new = self.add_node(successor)
+            # FIXME: Ugly copypaste.
+            if is_new:
+                new[successor._node_key()] = successor
+            else:
+                old[successor._node_key()] = self.search_tree[successor._node_key()]
+        node.post_expansion_insertion(old, new)
+        return (len(old) + len(new) > 0)
 
     def add_node(self, node):
         """
@@ -42,31 +72,25 @@ class BaseAI:
             return False
 
     def find_best_move(self):
-        raise NotImplementedError(".find_best_move() not implemented")
-    
+        raise NotImplementedError
+
+
+# Expansion
+
 
 class OneStepSearchMixin:
     """
-    Expends every unexpanded node in the search tree.
+    Expands every unexpanded node in the search tree.
     """
-    def expand_search_tree(self):
+    def step_search_tree_expansion(self):
         expansion_happened = False
         for node in [node for node in self.search_tree.values() if not node.is_expanded]:
-            # TODO: Does it really even make sense to distinguish between these after
-            #   adding/merging them to/with the search tree?
-            old = {}
-            new = {}
-            for successor in node.expand():
-                is_new = self.add_node(successor)
-                # FIXME: Ugly copypaste.
-                if is_new:
-                    new[successor._node_key()] = successor
-                else:
-                    old[successor._node_key()] = self.search_tree[successor._node_key()]
-            node.post_expansion_insertion(old, new)
-            expansion_happened = expansion_happened or (len(old) + len(new) > 0)
+            expansion_happened = self.expand_single_node(node) or expansion_happened
         return expansion_happened
-    
+
+
+# Expansion Control
+
 
 class FullExpansionMixin:
     """
@@ -77,12 +101,25 @@ class FullExpansionMixin:
     def expand_search_tree(self):
         expansion_happened = False
         while any(not node.is_expanded for node in self.search_tree.values()):
-            expansion_happened = super().expand_search_tree() or expansion_happened
-        return expansion_happened
+            expansion_happened = self.step_search_tree_expansion() or expansion_happened
 
 
 class BoundedExpansionMixin:
-    """
+    """Runs another mixin's expand_search until that has pushed the number of
+    nodes in the search tree beyond the given limit, or until this loop has
+    taken longer than the given limit, or the expansion yields no new nodes,
+    possibly because the search tree already is fully expanded.
+    
+    Note that these limits are checked only after each expansion step, so they
+    will not apply exactly when the limit is hit, only thereafter, and that it
+    is up to the other mixin to terminate its expansions every now and then.
+    For example, putting the FullExpansionMixin between this and the actual
+    mixin doing the expansion would nullify this mixin's functionality
+    completely.
+    
+    Also note that when using a node limit, a pruning mixin should be used,
+    otherwise further expansions are guaranteed to only run for one cycle
+    each.
     """
     def __init__(self, *args, time_limit=0, node_limit=0, **kwargs):
         super().__init__(*args, **kwargs)
@@ -93,14 +130,55 @@ class BoundedExpansionMixin:
         start_time = datetime.now()
         limit_exceeded = False
         while not limit_exceeded:
-            expansion_happened = super().expand_search_tree()
+            expansion_happened = self.step_search_tree_expansion()
             if self.node_limit and len(self.search_tree) >= self.node_limit:
                 limit_exceeded = True
             if self.time_limit and (datetime.now() - start_time).total_seconds() >= self.time_limit:
                 limit_exceeded = True
             if not expansion_happened:
                 limit_exceeded = True
-            
+
+
+# Combined expansion and expansion Control
+
+
+# FIXME: This is not quite Iterative Deepening, but there must be a
+# better known name for it.
+class ForwardSweepingMixin:
+    """
+    """
+
+    def __init__(self, *args, search_depth=0, **kwargs):
+        assert search_depth > 0
+        super().__init__(*args, **kwargs)
+        self.search_depth = search_depth
+
+    def expand_search_tree(self):
+        # FIXME: What's the setdefault here?
+        # FIXME: The recurring +1 smells bad.
+        self.search_layers = {layer: set() for layer in range(self.search_depth + 1)}
+        self.search_layers[0] = {self.current_state}
+        self.search_layers.setdefault(set)
+        known_nodes = {self.current_state}
+        for depth in range(1, self.search_depth + 1):
+            print("processiong layer {} following {} nodes".format(depth, len(self.search_layers[depth - 1])))
+            # FIXME: This loop is b0rked
+            for node in self.search_layers[depth - 1]:
+                # FIXME: Filter out nodes that have been previously encountered
+                candidates = set(node.get_successors().values()) - known_nodes
+                self.search_layers[depth].update(candidates)
+                known_nodes.update(candidates)
+        self.current_layer = 0
+        while self.step_search_tree_expansion() and self.current_layer < self.search_depth:
+            self.current_layer += 1
+
+    def step_search_tree_expansion(self):
+        # FIXME: SearchNode.is_expanded should probably be a function.
+        for node in [node for node in self.search_layers[self.current_layer] if not node.is_expanded]:
+            self.expand_single_node(node)
+
+
+# Pruning
 
 
 class NaivePruningMixin:

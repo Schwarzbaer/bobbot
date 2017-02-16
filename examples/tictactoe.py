@@ -1,15 +1,23 @@
 #!/usr/bin/env python3
 
-from bobbot.games.tictactoe import TicTacToeAdapter
 from bobbot.search_tree import BaseAI
-from bobbot.search_tree import (FullExpansionMixin, BoundedExpansionMixin, OneStepSearchMixin,
-    NaivePruningMixin)
-from bobbot.search_node import ChooseFirstMove, ChooseRandomMove, ChooseRandomMoveFromBest
+from bobbot.search_tree import FullExpansionMixin, BoundedExpansionMixin  # Expansion control
+from bobbot.search_tree import OneStepSearchMixin  # Expansion step
+from bobbot.search_tree import ForwardSweepingMixin # Combined Expansion control and step
+from bobbot.search_tree import NaivePruningMixin  # Pruning
+from bobbot.search_node import MinMaxScoringMixin  # Score backpropagation
+from bobbot.search_node import (ChooseFirstMoveMixin, ChooseRandomMoveMixin,
+    ChooseRandomMoveFromBestMixin)  # Move choosers
+from bobbot.games.tictactoe import TicTacToeAdapter  # Actual game rules
 
 
-TicTacToe = type('TicTacToe', (TicTacToeAdapter, ChooseRandomMoveFromBest), {})
-AI = type('AI', (BoundedExpansionMixin, OneStepSearchMixin, NaivePruningMixin, BaseAI), {})
-ai = AI(TicTacToe(), debug=True, time_limit=0.5, node_limit=1000)
+TicTacToe = type('TicTacToe',
+                 (MinMaxScoringMixin, ChooseRandomMoveFromBestMixin, TicTacToeAdapter),
+                 {})
+AI = type('AI',
+          (ForwardSweepingMixin, NaivePruningMixin, BaseAI),
+          {})
+ai = AI(TicTacToe(), debug=True, search_depth=2)
 
 
 if __name__ == '__main__':

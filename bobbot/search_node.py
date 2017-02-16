@@ -1,4 +1,12 @@
 class SearchNode:
+    """Implements expansion of new nodes, and merging of instances of
+    nodes, which may be required after the same state has been
+    reached via two or more different routes of search tree
+    expansion.
+    
+    Requires .all_legal_moves(), .make_move() to be implemented.
+    """
+
     def __init__(self, state=None, known_predecessors=None):
         if state is None:
             state = self._starting_state()
@@ -14,8 +22,29 @@ class SearchNode:
         self.moves = {} # {move: key}
     
     def expand(self):
-        """Create all successor states."""
-        raise NotImplementedError("Game's SearchNode doesn't implement .expand()")
+        """Return all successor states for this state. This doesn't
+        store them in this state object, as the search tree might
+        find that it has already found the successor state before,
+        and updates that instance with data from the instance
+        generated here. Either way, the successor with the most
+        complete set of information available (be it created here or
+        by merging the one created here with the existing one) is
+        indicated to this instance via :post_expansion_insertion:.
+        """
+
+        # TODO: This computes each move twice. Optimize!
+        # TODO: Can I be sure that there aren't any more kwargs?
+        move_to_successor = {move: self.__class__(state=self._make_move(move),
+                                                  known_predecessors={self})
+                             for move in self._all_legal_moves()}
+        # moves are {move: successor_node_key}, so unlike the actual
+        # successor state instance (which might be a spurious
+        # duplicate that will be removed during merge), these can
+        # safely be stored here; the node_key of both instances has
+        # to be the same to be valid.
+        self.moves = {move: state._node_key() for move, state in move_to_successor.items()}
+        self.is_expanded = True
+        return move_to_successor.values()
     
     def post_expansion_insertion(self, old, new):
         """Gets called after this node has been expanded and its new
@@ -25,24 +54,21 @@ class SearchNode:
         that haven't been known before. The format of both is
         {node_key: node}
         """
-        pass
-    
-    def is_finished(self):
-        """Is the game in a state from which it can't be continued,
-        either because a player won or it resulted in a draw?
-        """
-        raise NotImplementedError("Game's SearchNode doesn't implement .is_finished()")
-    
+
+        self.successors.update(old)
+        self.successors.update(new)
+        
     def merge(self, other_instance):
         """This node has been re-discovered through expansion of a
         game state, and the resulting information should be added to
         this instance.
         """
-        raise NotImplementedError("Game's SearchNode doesn't implement .merge()")
-    
-    def node_key(self):
-        raise NotImplementedError("Game's SearchNode doesn't implement .node_key()")
 
+        if not self.is_expanded and other_instance.is_expanded:
+            self.successors = other_instance.successors
+            self.is_expanded = True
+        self.known_predecessors.add(*other_instance.known_predecessors)
+    
     def get_successors(self):
         return self.successors
     
@@ -52,8 +78,22 @@ class SearchNode:
     def remove_predecessors(self, to_remove):
         self.known_predecessors -= set(to_remove)
 
+    def is_finished(self):
+        """Is the game in a state from which it can't be continued,
+        either because a player won or it resulted in a draw?
+        """
+
+        raise NotImplementedError("Game's SearchNode doesn't implement .is_finished()")
+
+    def node_key(self):
+        raise NotImplementedError("Game's SearchNode doesn't implement .node_key()")
+
 
 class GameAdapter(SearchNode):
+    """Helper class to create and test integrations with game rule
+    implementations more easily.
+    """
+    
     def _starting_state(self):
         return self.starting_state()
 
@@ -100,41 +140,14 @@ class GameAdapter(SearchNode):
         return self._node_key()
 
 
-class ExpandingSearchNode(SearchNode):
-    """Requires .all_legal_moves(), .make_move() to be implemented.
-    """
-    def expand(self):
-        """Returns all successor states for this state. It doesn't
-        store them in this state object, as the search tree might
-        find that it has already found the successor state before,
-        and updates that instance with data from the instance
-        generated here. Either way, the successor with the most
-        complete set of information available (be it created here or
-        by merging the one created here with the existing one) is
-        indicated to this instance via :post_expansion_insertion:.
-        """
-        # TODO: This computes each move twice. Optimize!
-        # TODO: Didn't I just say that we shouldn't store here?
-        # TODO: Can I be sure that there aren't any more kwargs?
-        move_to_successor = {move: self.__class__(state=self._make_move(move),
-                                                  known_predecessors={self})
-                             for move in self._all_legal_moves()}
-        self.moves = {move: state._node_key() for move, state in move_to_successor.items()}
-        self.is_expanded = True
-        return move_to_successor.values()
-
-    def post_expansion_insertion(self, old, new):
-        self.successors.update(old)
-        self.successors.update(new)
-
-    def merge(self, other_instance):
-        if not self.is_expanded and other_instance.is_expanded:
-            self.successors = other_instance.successors
-            self.is_expanded = True
-        self.known_predecessors.add(*other_instance.known_predecessors)
+# Score management
 
 
-class EvaluatingSearchNode(ExpandingSearchNode):
+# FIXME: This implementation triggers a backpropagation cascade
+#   pretty much every time that a score has been updated. There have
+#   to be approaches where each node has to update only once even
+#   without traversing the whole tree in the beginning.
+class BackpropagationScoringMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.score = self._evaluate()
@@ -157,10 +170,7 @@ class EvaluatingSearchNode(ExpandingSearchNode):
         has_been_updated = False
         for player in self.score:
             successor_scores = [successor.score[player] for successor in self.successors.values()]
-            if player == self._active_player():
-                new_score = max(successor_scores)
-            else:
-                new_score = min(successor_scores)
+            new_score = self.calculate_score(player, successor_scores)
             if new_score != self.score[player]:
                 self.score[player] = new_score
                 has_been_updated = True
@@ -168,26 +178,35 @@ class EvaluatingSearchNode(ExpandingSearchNode):
             self.backpropagate_score()
 
 
+class MinMaxScoringMixin(BackpropagationScoringMixin):
+    def calculate_score(self, player, successor_scores):
+        if player == self._active_player():
+            new_score = max(successor_scores)
+        else:
+            new_score = min(successor_scores)
+        return new_score 
+
+
+# Move choosers
 #
-# CHOOSERS
-# These SearchNodes implement .find_best_move() and require .score to be implemented.
-#
+# These SearchNodes implement .find_best_move() and usually require
+# .score to be implemented.
 
 
 import random
 
 
-class ChooseRandomMove(EvaluatingSearchNode):
+class ChooseRandomMoveMixin:
     def find_best_move(self):
         return random.choice(self.moves)
 
 
-class ChooseFirstMove(EvaluatingSearchNode):
+class ChooseFirstMoveMixin:
     def find_best_move(self):
         return sorted(self.moves)[0]
 
 
-class ChooseRandomMoveFromBest(EvaluatingSearchNode):
+class ChooseRandomMoveFromBestMixin:
     def find_best_move(self):
         possible_moves = {move: self.successors[key].score[self._active_player()]
                           for move, key in self.moves.items()}
