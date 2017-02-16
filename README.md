@@ -31,6 +31,10 @@ TODO
     * ...for pondering
 * Algorithms
   * Alpha-Beta pruning
+  * More human-like playing
+    * Given several guaranteed-win moves, choose the one leading to a win the fastest.
+    * Given several at-best-draw moves, choose the one allowing for the possibility of a win, as
+      long as it doesn't allow the opponent a guaranteed-win move.
   * [Proof-number search](https://en.wikipedia.org/wiki/Proof-number_search)
   * Conspiracy number search
     [Conspiracy Numbers](https://chessprogramming.wikispaces.com/Conspiracy+Numbers)
