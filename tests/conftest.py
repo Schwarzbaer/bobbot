@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import pytest
+
 from bobbot.search_tree import BaseAI
 from bobbot.search_tree import FullExpansionMixin, BoundedExpansionMixin
 from bobbot.search_tree import OneStepSearchMixin
@@ -11,21 +13,19 @@ from bobbot.search_node import (ChooseFirstMoveMixin, ChooseRandomMoveMixin,
 from bobbot.games.tictactoe import TicTacToeAdapter
 
 
-TicTacToe = type('TicTacToe',
-                 (MinMaxScoringMixin,
-                  ChooseRandomMoveFromBestMixin,
-                  TicTacToeAdapter,
-                 ),
-                 {})
-AI = type('AI',
-          (BoundedExpansionMixin,
-           ForwardSweepingMixin,
-           NaivePruningMixin,
-           BaseAI,
-          ),
-          {})
-ai = AI(TicTacToe(), debug=True, search_depth=5, node_limit=100)
-
-
-if __name__ == '__main__':
-    ai.play()
+@pytest.fixture
+def tictactoe():
+    TicTacToe = type('TicTacToe',
+                     (MinMaxScoringMixin,
+                      ChooseRandomMoveFromBestMixin,
+                      TicTacToeAdapter,
+                     ),
+                     {})
+    AI = type('AI',
+              (ForwardSweepingMixin,
+               NaivePruningMixin,
+               BaseAI,
+              ),
+              {})
+    ai = AI(TicTacToe(), debug=True, search_depth=2)
+    return ai

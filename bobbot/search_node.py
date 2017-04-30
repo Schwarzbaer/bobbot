@@ -14,13 +14,13 @@ class SearchNode:
 
         if known_predecessors is None:
             known_predecessors = set()
-        assert isinstance(known_predecessors, set), "{!r} is not a set".format(known_predecessors)
+        assert isinstance(known_predecessors, set)
         self.known_predecessors = known_predecessors
 
         self.is_expanded = False
         self.successors = {} # {key: state} to keep a ref to the successor
         self.moves = {} # {move: key}
-    
+
     def expand(self):
         """Return all successor states for this state. This doesn't
         store them in this state object, as the search tree might
@@ -42,10 +42,11 @@ class SearchNode:
         # duplicate that will be removed during merge), these can
         # safely be stored here; the node_key of both instances has
         # to be the same to be valid.
-        self.moves = {move: state._node_key() for move, state in move_to_successor.items()}
+        self.moves = {move: state._node_key()
+                      for move, state in move_to_successor.items()}
         self.is_expanded = True
         return move_to_successor.values()
-    
+
     def post_expansion_insertion(self, old, new):
         """Gets called after this node has been expanded and its new
         successors have been inserted into the search tree. :old:
@@ -57,7 +58,7 @@ class SearchNode:
 
         self.successors.update(old)
         self.successors.update(new)
-        
+
     def merge(self, other_instance):
         """This node has been re-discovered through expansion of a
         game state, and the resulting information should be added to
@@ -68,13 +69,19 @@ class SearchNode:
             self.successors = other_instance.successors
             self.is_expanded = True
         self.known_predecessors.add(*other_instance.known_predecessors)
-    
+
     def get_successors(self):
         return self.successors
-    
+
+    def get_successor_nodes(self):
+        return self.successors.values()
+
+    def get_successor_keys(self):
+        return self.successors.keys()
+
     def get_successor(self, move):
         return self.successors[self.moves[move]]
-    
+
     def remove_predecessors(self, to_remove):
         self.known_predecessors -= set(to_remove)
 
@@ -93,7 +100,7 @@ class GameAdapter(SearchNode):
     """Helper class to create and test integrations with game rule
     implementations more easily.
     """
-    
+
     def _starting_state(self):
         return self.starting_state()
 
@@ -165,7 +172,7 @@ class BackpropagationScoringMixin:
         super().merge(other_instance)
         if self.successors:
             self.update_score()
-        
+
     def update_score(self):
         has_been_updated = False
         for player in self.score:
@@ -184,7 +191,7 @@ class MinMaxScoringMixin(BackpropagationScoringMixin):
             new_score = max(successor_scores)
         else:
             new_score = min(successor_scores)
-        return new_score 
+        return new_score
 
 
 # Move choosers
@@ -208,9 +215,9 @@ class ChooseFirstMoveMixin:
 
 class ChooseRandomMoveFromBestMixin:
     def find_best_move(self):
+        assert self.is_expanded
         possible_moves = {move: self.successors[key].score[self._active_player()]
                           for move, key in self.moves.items()}
         best_score = max(possible_moves.values())
         best_moves = [move for move in possible_moves if possible_moves[move] == best_score]
         return random.choice(best_moves)
-

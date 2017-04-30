@@ -17,6 +17,8 @@ class BaseAI:
         self.current_state = self.current_state.get_successor(move)
 
     def play(self):
+        """Play automatically, making moves until the game is finished.
+        """
         if self.debug:
             print(self.current_state, end="\n")
             print("Nodes in the search tree: {}".format(len(self.search_tree)))
@@ -29,7 +31,7 @@ class BaseAI:
     def expand_search_tree(self):
         """Run the expansion of the search tree. By default, this
         will just step the expansion algorithm once.
-        
+
         Returns:
             bool: True if any wrapping expand_search_tree should
                 interrupt its loop, False if that's irrelevant.
@@ -39,14 +41,13 @@ class BaseAI:
     def step_search_tree_expansion(self):
         """Run a single iteration of the expansion algorithm
         Returns:
-            bool: True if any node has actually be expanded, False
-                otherwise.
+            bool: Whether another expansion step may be run.
         """
         raise NotImplementedError
 
     def expand_single_node(self, node):
-        # TODO: Does it really even make sense to distinguish between these after
-        #   adding/merging them to/with the search tree?
+        # TODO: Does it really even make sense to distinguish between these
+        #   after adding/merging them to/with the search tree?
         old = {}
         new = {}
         for successor in node.expand():
@@ -60,9 +61,8 @@ class BaseAI:
         return (len(old) + len(new) > 0)
 
     def add_node(self, node):
-        """
-        Adds the node to the search tree if it isn't present already, or causes
-        a merge with the already present instance of it otherwise.
+        """Adds the node to the search tree if it isn't present already, or
+        causes a merge with the already present instance of it otherwise.
         """
         if node._node_key() not in self.search_tree:
             self.search_tree[node._node_key()] = node
@@ -125,22 +125,24 @@ class BoundedExpansionMixin:
         super().__init__(*args, **kwargs)
         self.time_limit = time_limit
         self.node_limit = node_limit
-    
-    def expand_search_tree(self):
+
+    def step_search_tree_expansion(self):
         start_time = datetime.now()
+        expansion_happened = super().step_search_tree_expansion()
+        elapsed_time = (datetime.now() - start_time).total_seconds()
+
         limit_exceeded = False
-        while not limit_exceeded:
-            expansion_happened = self.step_search_tree_expansion()
-            if self.node_limit and len(self.search_tree) >= self.node_limit:
-                limit_exceeded = True
-            if self.time_limit and (datetime.now() - start_time).total_seconds() >= self.time_limit:
-                limit_exceeded = True
-            if not expansion_happened:
-                limit_exceeded = True
+        if self.node_limit and len(self.search_tree) >= self.node_limit:
+            limit_exceeded = True
+        if self.time_limit and elapsed_time >= self.time_limit:
+            limit_exceeded = True
+
+        return expansion_happened and not limit_exceeded
 
 
 # Combined expansion and expansion Control
 
+from collections import defaultdict
 
 # FIXME: This is not quite Iterative Deepening, but there must be a
 # better known name for it.
@@ -154,28 +156,27 @@ class ForwardSweepingMixin:
         self.search_depth = search_depth
 
     def expand_search_tree(self):
-        # FIXME: What's the setdefault here?
-        # FIXME: The recurring +1 smells bad.
-        self.search_layers = {layer: set() for layer in range(self.search_depth + 1)}
-        self.search_layers[0] = {self.current_state}
-        self.search_layers.setdefault(set)
-        known_nodes = {self.current_state}
-        for depth in range(1, self.search_depth + 1):
-            print("processiong layer {} following {} nodes".format(depth, len(self.search_layers[depth - 1])))
-            # FIXME: This loop is b0rked
-            for node in self.search_layers[depth - 1]:
-                # FIXME: Filter out nodes that have been previously encountered
-                candidates = set(node.get_successors().values()) - known_nodes
-                self.search_layers[depth].update(candidates)
-                known_nodes.update(candidates)
-        self.current_layer = 0
-        while self.step_search_tree_expansion() and self.current_layer < self.search_depth:
-            self.current_layer += 1
+        current_layer = 0
+        self.current_layer_nodes = {self.current_state}
+        self.known_nodes = {self.current_state}
+
+        abort = False
+        while current_layer < self.search_depth and not abort:
+            self.next_layer = set()
+            abort = not self.step_search_tree_expansion()
+            current_layer += 1
+            self.current_layer_nodes = self.next_layer
+        print("{} plies expanded.".format(current_layer))
 
     def step_search_tree_expansion(self):
-        # FIXME: SearchNode.is_expanded should probably be a function.
-        for node in [node for node in self.search_layers[self.current_layer] if not node.is_expanded]:
-            self.expand_single_node(node)
+        for node in self.current_layer_nodes:
+            if not node.is_expanded:
+                self.expand_single_node(node)
+            successors = node.get_successor_nodes()
+            self.next_layer.update(set(successors) - self.known_nodes)
+            self.known_nodes.update(successors)
+
+        return len(self.next_layer) > 0
 
 
 # Pruning
@@ -200,7 +201,8 @@ class NaivePruningMixin:
         nodes_to_delete = set(self.search_tree.keys()) - transitive_hull
         for key in nodes_to_delete:
             del self.search_tree[key]
-        # FIXME: This requires nodes to also know predecessor node key, not just their objects.
+        # FIXME: This requires nodes to also know predecessor node key, not just
+        # their objects.
         # for node in self.search_tree.values():
         #     node.remove_predecessors(nodes_to_delete)
         post_prune_size = len(self.search_tree)
@@ -210,4 +212,3 @@ class NaivePruningMixin:
                 post_move_size - post_prune_size,
                 post_prune_size)
             )
-
