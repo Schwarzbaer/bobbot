@@ -16,6 +16,10 @@ class BaseAI:
     def num_states(self):
         return len(self.search_tree)
 
+    # FIXME: Into diagnostics or AI-interface class
+    def current_score(self):
+        return self.current_state.score
+
     def choose_move(self):
         self.expand_search_tree()
         chosen_move = self.current_state.find_best_move()
