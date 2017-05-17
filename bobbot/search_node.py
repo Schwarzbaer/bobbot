@@ -3,8 +3,7 @@ class SearchNode:
     nodes, which may be required after the same state has been
     reached via two or more different routes of search tree
     expansion.
-    
-    Requires .all_legal_moves(), .make_move() to be implemented.
+    Public methods: .expand(), .post_expansio_insertion()
     """
 
     def __init__(self, state=None, known_predecessors=None):
@@ -23,13 +22,15 @@ class SearchNode:
 
     def expand(self):
         """Return all successor states for this state. This doesn't
-        store them in this state object, as the search tree might
-        find that it has already found the successor state before,
-        and updates that instance with data from the instance
-        generated here. Either way, the successor with the most
-        complete set of information available (be it created here or
-        by merging the one created here with the existing one) is
-        indicated to this instance via :post_expansion_insertion:.
+        store them in this state object; .post_expansion_insertion()
+        has to be used for that. The reason for this is that any state
+        node found during expansion may have previously been come upon
+        via another set of moves. Therefore, it is the search tree's
+        responsibility to detecht such duplications, and indicate them
+        when calling .post_expansion_insertion().
+
+        Returns: SearchNode objects.
+        Requires: ._make_move(), ._all_legal_moves(), ._node_key()
         """
 
         # TODO: This computes each move twice. Optimize!
@@ -90,10 +91,12 @@ class SearchNode:
         either because a player won or it resulted in a draw?
         """
 
-        raise NotImplementedError("Game's SearchNode doesn't implement .is_finished()")
+        raise NotImplementedError("Game's SearchNode doesn't implement "
+                                  ".is_finished()")
 
     def node_key(self):
-        raise NotImplementedError("Game's SearchNode doesn't implement .node_key()")
+        raise NotImplementedError("Game's SearchNode doesn't implement "
+                                  ".node_key()")
 
 
 class GameAdapter(SearchNode):
@@ -130,6 +133,12 @@ class GameAdapter(SearchNode):
 
     def make_move(self, game_state, move):
         raise NotImplementedError("Game does not implement .make_move()")
+
+    def _winner(self):
+        return self.winner(self.state)
+
+    def winner(self, game_state):
+        raise NotImplementedError("Game does not implement .winner()")
 
     def _node_key(self):
         return self.node_key(self.state)
@@ -176,7 +185,8 @@ class BackpropagationScoringMixin:
     def update_score(self):
         has_been_updated = False
         for player in self.score:
-            successor_scores = [successor.score[player] for successor in self.successors.values()]
+            successor_scores = [successor.score[player]
+                                for successor in self.successors.values()]
             new_score = self.calculate_score(player, successor_scores)
             if new_score != self.score[player]:
                 self.score[player] = new_score
@@ -219,5 +229,6 @@ class ChooseRandomMoveFromBestMixin:
         possible_moves = {move: self.successors[key].score[self._active_player()]
                           for move, key in self.moves.items()}
         best_score = max(possible_moves.values())
-        best_moves = [move for move in possible_moves if possible_moves[move] == best_score]
+        best_moves = [move for move in possible_moves
+                      if possible_moves[move] == best_score]
         return random.choice(best_moves)

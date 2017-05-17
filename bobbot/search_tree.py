@@ -1,5 +1,9 @@
 from datetime import datetime
 
+from .search_node import SearchNode
+
+
+# Basic functionality
 
 class BaseAI:
     def __init__(self, current_state, debug=False):
@@ -8,12 +12,20 @@ class BaseAI:
         self.current_state = current_state
         self.add_node(current_state)
 
+    # FIXME: Move into a diagnostics class
+    def num_states(self):
+        return len(self.search_tree)
+
     def choose_move(self):
         self.expand_search_tree()
         chosen_move = self.current_state.find_best_move()
         return chosen_move
 
     def make_move(self, move):
+        if not self.current_state.is_expanded:
+            # FIXME: This should only add the successor for the
+            # requested move.
+            self.expand_single_node(self.current_state)
         self.current_state = self.current_state.get_successor(move)
 
     def play(self):
@@ -46,6 +58,7 @@ class BaseAI:
         raise NotImplementedError
 
     def expand_single_node(self, node):
+        assert isinstance(node, SearchNode)
         # TODO: Does it really even make sense to distinguish between these
         #   after adding/merging them to/with the search tree?
         old = {}
@@ -75,18 +88,46 @@ class BaseAI:
         raise NotImplementedError
 
 
+class PlayerInterface:
+    def active_player(self):
+        return self.current_state._active_player()
+
+    def is_finished(self):
+        return self.current_state._is_finished()
+
+    def all_legal_moves(self):
+        return self.current_state._all_legal_moves()
+
+    def winner(self):
+        return self.current_state._winner()
+
+
 # Expansion
+
+
+class CurrentStateExpansionMixin:
+    """
+    Expands only the current state.
+    """
+    def step_search_tree_expansion(self):
+        if self.current_state.is_expanded:
+            return False
+        else:
+            return self.expand_single_node(self.current_state)
 
 
 class OneStepSearchMixin:
     """
-    Expands every unexpanded node in the search tree.
+    Expands every currently unexpanded node in the search tree. This
+    is not recursive.
     """
     def step_search_tree_expansion(self):
-        expansion_happened = False
-        for node in [node for node in self.search_tree.values() if not node.is_expanded]:
-            expansion_happened = self.expand_single_node(node) or expansion_happened
-        return expansion_happened
+        has_expanded = False
+        unexpanded_nodes = [node for node in self.search_tree.values()
+                            if not node.is_expanded]
+        for node in unexpanded_nodes:
+            has_expanded = self.expand_single_node(node) or has_expanded
+        return has_expanded
 
 
 # Expansion Control
@@ -166,7 +207,8 @@ class ForwardSweepingMixin:
             abort = not self.step_search_tree_expansion()
             current_layer += 1
             self.current_layer_nodes = self.next_layer
-        print("{} plies expanded.".format(current_layer))
+        if self.debug:
+            print("{} plies expanded.".format(current_layer))
 
     def step_search_tree_expansion(self):
         for node in self.current_layer_nodes:

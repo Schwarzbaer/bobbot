@@ -22,7 +22,7 @@ def other_player(player):
 def player_symbol(state):
     return {PLAYER_A: "A",
             PLAYER_B: "B",
-            None: "n/a"}[state]
+            }[state]
 
 
 def textual_repr(game_state):
@@ -58,7 +58,7 @@ def is_legal_move(game_state, take):
 def make_move(game_state, take):
     if not is_legal_move(game_state, take):
         raise ValueError("Illegal move")
-    
+
     board = list(game_state.board)
     board[take[0]] = board[take[0]] - take[1]
     if all(board[i] == 0 for i in range(3)):
@@ -68,7 +68,7 @@ def make_move(game_state, take):
         next_player = other_player(game_state.active_player)
         winner = None
     return GameState(board=tuple(board), active_player=next_player, winner=winner)
-        
+
 
 def all_legal_moves(game_state):
     return [(pos, take)
@@ -78,7 +78,10 @@ def all_legal_moves(game_state):
 
 def node_key(game_state):
     board_repr = ''.join([str(heapsize) for heapsize in game_state.board])
-    player_repr = player_symbol(game_state.active_player)
+    if game_state.active_player is not None:
+        player_repr = player_symbol(game_state.active_player)
+    else:
+        player_repr = player_symbol(game_state.winner)
     return board_repr + player_repr
 
 
@@ -119,7 +122,7 @@ class NimAdapter(GameAdapter):
 
     def active_player(self, game_state):
         return game_state.active_player
-        
+
     def is_finished(self, game_state):
         return is_finished(game_state)
 
@@ -129,9 +132,11 @@ class NimAdapter(GameAdapter):
     def make_move(self, game_state, move):
         return make_move(game_state, move)
 
+    def winner(self, game_state):
+        return winner(game_state)
+
     def node_key(self, game_state):
         return node_key(game_state)
 
     def __repr__(self):
         return textual_repr(self.state)  # FIXME: Eeew, it's touching guts!
-

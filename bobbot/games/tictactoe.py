@@ -19,21 +19,25 @@ def player_symbol(state):
 
 def textual_repr(game_state):
     b = game_state.board
+    if not is_finished(game_state):
+        m = "Move: {}".format(player_symbol(game_state.active_player))
+    else:
+        m = "Winner: {}".format(player_symbol(winner(game_state)))
     return (" {} | {} | {}\n"
             "---+---+---\n"
             " {} | {} | {}\n"
             "---+---+---\n"
             " {} | {} | {}\n"
-            "Move: {}".format(player_symbol(b[(0,0)]),
-                              player_symbol(b[(1,0)]),
-                              player_symbol(b[(2,0)]),
-                              player_symbol(b[(0,1)]),
-                              player_symbol(b[(1,1)]),
-                              player_symbol(b[(2,1)]),
-                              player_symbol(b[(0,2)]),
-                              player_symbol(b[(1,2)]),
-                              player_symbol(b[(2,2)]),
-                              player_symbol(game_state.active_player)))
+            "{}".format(player_symbol(b[(0,0)]),
+                        player_symbol(b[(1,0)]),
+                        player_symbol(b[(2,0)]),
+                        player_symbol(b[(0,1)]),
+                        player_symbol(b[(1,1)]),
+                        player_symbol(b[(2,1)]),
+                        player_symbol(b[(0,2)]),
+                        player_symbol(b[(1,2)]),
+                        player_symbol(b[(2,2)]),
+                        m))
 
 # Functional implementation of game rules
 
@@ -53,7 +57,7 @@ def is_winner(game_state, player):
                   for b_column in range(3)])
     diagonal_a = all([game_state.board[(b, b)] == player for b in range(3)])
     diagonal_b = all([game_state.board[(b, 2-b)] == player for b in range(3)])
-    
+
     return any([row, column, diagonal_a, diagonal_b])
 
 
@@ -61,6 +65,17 @@ def is_finished(game_state):
     player_won = is_winner(game_state, PLAYER_X) or is_winner(game_state, PLAYER_O)
     board_full = all([field is not None for field in game_state.board.values()])
     return player_won or board_full
+
+
+def winner(game_state):
+    if is_winner(game_state, PLAYER_X):
+        return PLAYER_X
+    elif is_winner(game_state, PLAYER_O):
+        return PLAYER_O
+    elif not is_finished(game_state):
+        raise ValueError
+    else:
+        return None
 
 
 def is_legal_move(game_state, coord):
@@ -72,7 +87,7 @@ def is_legal_move(game_state, coord):
 def make_move(game_state, coord):
     if not is_legal_move(game_state, coord):
         raise ValueError("Illegal move")
-        
+
     successor_board = {c: s for c, s in game_state.board.items()}
     successor_board[coord] = game_state.active_player
     tentative_successor_game_state = GameState(board=successor_board,
@@ -134,18 +149,11 @@ class TicTacToeAdapter(GameAdapter):
     def make_move(self, game_state, move):
         return make_move(game_state, move)
 
+    def winner(self, game_state):
+        return winner(game_state)
+
     def node_key(self, game_state):
         return node_key(game_state)
 
     def __repr__(self):
-        board_repr = textual_repr(self.state)
-        value_repr = "State valuation: {: 2.1f}/{: 2.1f}".format(self.score[PLAYER_X], 
-                                                                 self.score[PLAYER_O])
-        successor_value_reprs = ["{: 2.1f}/{: 2.1f}".format(successor.score[PLAYER_X],
-                                                            successor.score[PLAYER_O])
-                                 for successor in self.successors.values()]
-        return "".join([board_repr, "\n",
-                        value_repr, " (",
-                        ", ".join(successor_value_reprs),
-                        ")"])
-
+        return textual_repr(self.state)
